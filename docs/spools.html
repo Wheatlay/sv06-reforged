@@ -60,6 +60,16 @@
   </header>
   <p class="lead">Set up the spools your printer keeps track of. Connect over USB, or make a file to print from the SD card.</p>
 
+  <section class="card">
+    <h2>How it works</h2>
+    <ul style="margin:0; padding-left:20px">
+      <li>After every print, the printer subtracts the filament it actually used from the spool the print ran on.</li>
+      <li>The spool is picked from the file's material. If you have one PLA spool, a PLA file uses it. If you have several,
+        the printer shows them before the print starts so you can pick the right one. You can always change it there.</li>
+      <li>Spools don't change temperatures. Your slicer profile sets those, as before.</li>
+    </ul>
+  </section>
+
   <div class="tabs" role="tablist">
     <button role="tab" id="tab-usb" aria-selected="true">USB cable</button>
     <button role="tab" id="tab-sd" aria-selected="false">SD card file</button>
@@ -96,12 +106,12 @@
       <label>Name (up to 10 characters)<input id="add-name" maxlength="10" placeholder="PLA Red"></label>
       <label>Material
         <select id="add-mat">
-          <option value="1.24">PLA</option>
-          <option value="1.27">PETG</option>
-          <option value="1.04">ABS</option>
-          <option value="1.07">ASA</option>
-          <option value="1.21">TPU</option>
-          <option value="custom">Other…</option>
+          <option>PLA</option>
+          <option>PETG</option>
+          <option>ABS</option>
+          <option>ASA</option>
+          <option>TPU</option>
+          <option value="OTHER">Other…</option>
         </select>
       </label>
       <label>Grams left<input id="add-grams" type="number" min="0" max="65535" step="10" value="1000"></label>
@@ -121,12 +131,11 @@
   </section>
 
   <details class="card">
-    <summary>How the counting works</summary>
-    <p>During every print the printer counts the filament the extruder actually pushes and subtracts it from the loaded
-      spool when the print ends. "Grams left" of 0 means "not set": no warnings for that spool. Before a print, the printer warns
-      when the file needs more than is left, or when the file is for a different filament than the loaded spool.</p>
-    <p>Tip: in your slicer's filament profile, add <code>M1100 A2</code> (with your slot number) to the start G-code. Printing with
-      that profile then loads the matching spool by itself.</p>
+    <summary>More details</summary>
+    <p>"Grams left" of 0 means "not set": no warnings for that spool. Before a print, the printer warns when the file
+      needs more than is left, or when no spool of the file's material is set up.</p>
+    <p>Optional: to always use one exact spool for a slicer filament profile, add <code>M1100 A2</code> (with your slot
+      number) to that profile's start G-code.</p>
   </details>
 </main>
 
@@ -140,9 +149,10 @@ let sdCmds = [];          // commands queued for the SD file
 
 // ---------- tabs ----------
 // The SD file can't read the printer's list: start from the firmware defaults, new spools go to slot 2 and up
+const DENSITY = { PLA: '1.24', PETG: '1.27', ABS: '1.04', ASA: '1.07', TPU: '1.21', OTHER: '1.24' };
 const sdDefaults = () => [
-  { slot: 0, name: 'PLA', density: '1.24', left: 0, used: 0, loaded: true },
-  { slot: 1, name: 'PETG', density: '1.27', left: 0, used: 0, loaded: false },
+  { slot: 0, name: 'PLA', material: 'PLA', density: '1.24', left: 0, used: 0, loaded: true },
+  { slot: 1, name: 'PETG', material: 'PETG', density: '1.27', left: 0, used: 0, loaded: false },
 ];
 function setMode(m) {
   if (m !== mode() || !spools.length) { spools = m === 'sd' ? sdDefaults() : []; sdCmds = []; }
@@ -197,8 +207,9 @@ function send(cmd, timeout = 8000) {
 function parseList(lines) {
   const out = [];
   for (const l of lines) {
-    const m = l.match(/S(\d)\s+"([^"]*)"\s+D([\d.]+)\s+G(\d+)\s+U(\d+)(\s*\*)?/);
-    if (m) out.push({ slot: +m[1], name: m[2], density: m[3], left: +m[4], used: +m[5], loaded: !!m[6] });
+    // Firmware 1.1.1+ adds T<material>; 1.1.0 lists without it
+    const m = l.match(/S(\d)\s+"([^"]*)"\s+(?:T(\w+)\s+)?D([\d.]+)\s+G(\d+)\s+U(\d+)(\s*\*)?/);
+    if (m) out.push({ slot: +m[1], name: m[2], material: m[3] || '', density: m[4], left: +m[5], used: +m[6], loaded: !!m[7] });
   }
   return out;
 }
@@ -257,7 +268,7 @@ $('disconnect').onclick = disconnect;
 window.addEventListener('pagehide', disconnect);
 
 // ---------- add ----------
-$('add-mat').onchange = () => $('custom-wrap').classList.toggle('hidden', $('add-mat').value !== 'custom');
+$('add-mat').onchange = () => $('custom-wrap').classList.toggle('hidden', $('add-mat').value !== 'OTHER');
 
 function freeSlot() {
   const used = new Set(spools.map((s) => s.slot));
@@ -268,21 +279,24 @@ const quote = (s) => '"' + s.replace(/"/g, '') + '"';
 
 $('add').onclick = async () => {
   const name = $('add-name').value.trim().slice(0, 10).replace(/"/g, '');
-  const density = $('add-mat').value === 'custom' ? (+$('add-density').value).toFixed(2) : $('add-mat').value;
+  const material = $('add-mat').value;
+  const density = material === 'OTHER' ? (+$('add-density').value).toFixed(2) : DENSITY[material];
   const grams = Math.max(0, Math.min(65535, Math.round(+$('add-grams').value || 0)));
   const st = $('add-status');
   if (!name) { status(st, 'Give the spool a name.', 'err'); return; }
   if (spools.some((s) => s.name.toLowerCase() === name.toLowerCase())) { status(st, 'A spool with this name exists already.', 'err'); return; }
   const slot = freeSlot();
   if (slot < 0) { status(st, 'All 8 slots are used. Delete one first.', 'err'); return; }
-  const cmd = `M1100 S${slot} N${quote(name)} D${density} G${grams}` + ($('add-load').checked ? ` A${slot}` : '');
+  // Firmware 1.1.0 doesn't know T (it lists spools without a material); the SD file is for 1.1.1+
+  const withT = mode() === 'sd' || spools.some((s) => s.material);
+  const cmd = `M1100 S${slot} N${quote(name)}` + (withT ? ` T${material}` : '') + ` D${density} G${grams}` + ($('add-load').checked ? ` A${slot}` : '');
   if (mode() === 'usb') {
     if (!writer) { status(st, 'Connect to the printer first, or use the SD card file tab.', 'err'); return; }
     if (await run(cmd, st)) status(st, `Added ${name}.`, 'ok');
   } else {
     sdCmds.push(cmd);
     if ($('add-load').checked) spools.forEach((s) => (s.loaded = false));
-    spools.push({ slot, name, density, left: grams, used: 0, loaded: $('add-load').checked });
+    spools.push({ slot, name, material, density, left: grams, used: 0, loaded: $('add-load').checked });
     status(st, `Added ${name} to the file.`, 'ok');
     render();
   }
@@ -308,7 +322,7 @@ function render() {
     <tr>
       <td>${s.slot}</td>
       <td>${esc(s.name)} ${s.loaded ? '<span class="loaded">· loaded</span>' : ''}</td>
-      <td class="num">${s.density}</td>
+      <td>${s.material ? esc(s.material === 'OTHER' ? 'Other' : s.material) : '–'}</td>
       <td class="num"><input type="number" min="0" max="65535" step="10" value="${s.left}" data-slot="${s.slot}" aria-label="Grams left"></td>
       <td class="num">${s.used} g</td>
       <td class="row" style="flex-wrap:nowrap">
@@ -316,7 +330,7 @@ function render() {
         <button data-del="${s.slot}">Delete</button>
       </td>
     </tr>`).join('');
-  box.innerHTML = `<table><thead><tr><th>Slot</th><th>Name</th><th>g/cm³</th><th>Grams left</th><th>Used</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+  box.innerHTML = `<table><thead><tr><th>Slot</th><th>Name</th><th>Material</th><th>Grams left</th><th>Used</th><th></th></tr></thead><tbody>${rows}</tbody></table>
     <p class="status">Grams left: type a number and press Enter. 0 = not set (no warnings).</p>`;
   box.querySelectorAll('input[data-slot]').forEach((inp) => inp.addEventListener('change', () => {
     const slot = +inp.dataset.slot, g = Math.max(0, Math.min(65535, Math.round(+inp.value || 0)));
