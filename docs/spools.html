@@ -69,7 +69,11 @@
     <div class="row">
       <button class="primary" id="connect">Connect to printer</button>
       <button id="refresh" disabled>Refresh</button>
-      <span id="conn-status" class="status">Not connected. Works in Chrome or Edge on a computer.</span>
+      <span id="conn-status" class="status">Not connected.</span>
+    </div>
+    <p class="status" style="margin:10px 0 0">Click Connect, then pick the printer's port (usually "USB-SERIAL CH340"). Works in Chrome and
+      Edge; Firefox asks twice for permission first.</p>
+    <div>
     </div>
   </section>
 
@@ -170,11 +174,11 @@ async function readLoop() {
   }
 }
 
-function send(cmd) {
+function send(cmd, timeout = 8000) {
   return new Promise((resolve, reject) => {
     const w = { lines: [], done: resolve };
     waiters.push(w);
-    setTimeout(() => { const i = waiters.indexOf(w); if (i >= 0) { waiters.splice(i, 1); reject(new Error('The printer did not answer')); } }, 8000);
+    setTimeout(() => { const i = waiters.indexOf(w); if (i >= 0) { waiters.splice(i, 1); reject(new Error('The printer did not answer')); } }, timeout);
     writer.write(new TextEncoder().encode(cmd + '\n'));
   });
 }
@@ -208,10 +212,17 @@ $('connect').onclick = async () => {
     await port.open({ baudRate: 115200 });
     writer = port.writable.getWriter(); reader = port.readable.getReader();
     readLoop();
-    status($('conn-status'), 'Connected. Reading spools…');
-    await new Promise((r) => setTimeout(r, 600));
-    if (await run('M1100', $('conn-status'))) status($('conn-status'), 'Connected.', 'ok');
-    else if (!spools.length) status($('conn-status'), 'Connected, but no spool list came back. Is the firmware SV06 Reforged 1.1 or newer?', 'err');
+    // Keep asking for a while in case the printer is still starting up (up to ~15 s)
+    status($('conn-status'), 'Waiting for the printer…');
+    let lines = null;
+    for (let i = 0; i < 8 && !lines; i++) {
+      try { lines = await send('M1100', 2000); } catch (e) { waiters = []; }
+    }
+    if (!lines) { status($('conn-status'), 'No answer. Is the printer on, and is this its port (USB-SERIAL CH340)? Close other programs using it (Orca, Pronterface) and try again.', 'err'); return; }
+    if (errorIn(lines)) { status($('conn-status'), errorIn(lines), 'err'); return; }
+    spools = parseList(lines); render();
+    if (spools.length) status($('conn-status'), 'Connected.', 'ok');
+    else status($('conn-status'), 'Connected, but no spool list came back. Is the firmware SV06 Reforged 1.1 or newer?', 'err');
     $('refresh').disabled = false; $('connect').textContent = 'Reconnect';
   } catch (e) { status($('conn-status'), e.message, 'err'); }
 };
