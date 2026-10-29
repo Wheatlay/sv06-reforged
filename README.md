@@ -12,15 +12,15 @@ V2.0.0_A): if your printer has one, it is ignored.
 
 - **Spool tracker.** The printer keeps track of how many grams are left on up to 8 spools, counted from what the
   extruder actually pushed. Pick the loaded spool in the menu. Before a print it warns you when the file needs more
-  than is left, or when the file is for a different filament. Add or rename spools from your PC with `M1100`
-  (see below).
+  than is left, or when the file is for a different filament. Set your spools up in the
+  [spool page](https://wheatlay.github.io/sv06-reforged/spools.html).
 - **Night mode.** One switch in the menu makes printing slow and quiet for overnight prints, whatever the file asks
   for, and mutes the beeper.
 - **Delayed start.** Pick a file, choose "Start later" (30 minutes to 24 hours), and the screen counts down. At the
   chosen time the printer heats and prints on its own, so only use it for prints you'd leave unattended anyway.
 - **Printed marks.** Files you printed to the end get a check mark, or a count, in the file list.
-- **Redesigned status screen.** Large time left and elapsed time, a progress bar with the percentage inside,
-  heater icons that fill with the power they get, and long file names that scroll.
+- **Redesigned status screen.** Large time left and elapsed time, a progress bar with the percentage inside, and
+  heater icons that fill with the power they get.
 
   <img src="assets/status-screen.png" width="400" alt="Status screen during a print">
 
@@ -34,8 +34,10 @@ V2.0.0_A): if your printer has one, it is ignored.
 
 ## Managing spools from your PC
 
-Send these over USB (e.g. Pronterface), or save them as a `.gcode` file and print it from the card. Slots are 0 to 7;
-PLA and PETG are set up by default.
+Open the **[spool page](https://wheatlay.github.io/sv06-reforged/spools.html)** in Chrome or Edge. It connects to the
+printer over the USB cable, or makes a small file to print from the SD card. Nothing to install.
+
+For terminal users, the page sends `M1100` commands. Slots are 0 to 7; PLA and PETG are set up by default.
 
 ```gcode
 M1100                              ; list spools (* = loaded)

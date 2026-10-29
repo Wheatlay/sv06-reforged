@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SV06 Reforged Spools</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1b1e24; --muted: #5f6671; --line: #dde1e7;
+    --accent: #e8661a; --accent-text: #ffffff; --ok: #1f8a4c; --err: #c0392b; --field: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171b; --card: #1e2127; --text: #e8eaee; --muted: #9aa1ab; --line: #30353d;
+      --accent: #ff8a3d; --accent-text: #15171b; --ok: #4cc488; --err: #ff6b5b; --field: #15171b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  header img { width: 44px; height: 44px; }
+  h1 { font-size: 22px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  p.lead { color: var(--muted); margin: 4px 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--field); color: var(--text); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  input, select { font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; min-width: 0; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: 2fr 1.2fr 1fr auto; gap: 10px; align-items: end; }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr 1fr; } }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  td.num { font-variant-numeric: tabular-nums; }
+  td input { width: 84px; }
+  .loaded { color: var(--ok); font-weight: 600; }
+  .status { font-size: 13px; color: var(--muted); }
+  .status.err { color: var(--err); }
+  .status.ok { color: var(--ok); }
+  .hidden { display: none; }
+  pre { background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 10px; overflow-x: auto; font-size: 13px; margin: 8px 0 0; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tabs button[aria-selected="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .empty { color: var(--muted); padding: 12px 0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="logo.svg" alt="">
+    <div>
+      <h1>Spools</h1>
+      <div class="status">SV06 Reforged 1.1 or newer</div>
+    </div>
+  </header>
+  <p class="lead">Set up the spools your printer keeps track of. Connect over USB, or make a file to print from the SD card.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-usb" aria-selected="true">USB cable</button>
+    <button role="tab" id="tab-sd" aria-selected="false">SD card file</button>
+  </div>
+
+  <section id="usb" class="card">
+    <div class="row">
+      <button class="primary" id="connect">Connect to printer</button>
+      <button id="refresh" disabled>Refresh</button>
+      <span id="conn-status" class="status">Not connected. Works in Chrome or Edge on a computer.</span>
+    </div>
+  </section>
+
+  <section id="sd" class="card hidden">
+    <p class="status" style="margin-top:0">Add spools below, then download the file, copy it to the SD card, and print it
+      from the printer's menu (Print from Media). It only changes the spool list; nothing moves or heats. The list starts
+      from the defaults (PLA, PETG); if you changed slots before, use the USB cable instead.</p>
+    <div class="row">
+      <button class="primary" id="download" disabled>Download spools.gcode</button>
+      <button id="clear-sd" disabled>Start over</button>
+    </div>
+    <details><summary>Show the file</summary><pre id="sd-preview"></pre></details>
+  </section>
+
+  <section class="card">
+    <h2>Add a spool</h2>
+    <div class="grid">
+      <label>Name (up to 10 characters)<input id="add-name" maxlength="10" placeholder="PLA Red"></label>
+      <label>Material
+        <select id="add-mat">
+          <option value="1.24">PLA</option>
+          <option value="1.27">PETG</option>
+          <option value="1.04">ABS</option>
+          <option value="1.07">ASA</option>
+          <option value="1.21">TPU</option>
+          <option value="custom">Other…</option>
+        </select>
+      </label>
+      <label>Grams left<input id="add-grams" type="number" min="0" max="65535" step="10" value="1000"></label>
+      <button class="primary" id="add">Add</button>
+    </div>
+    <label id="custom-wrap" class="hidden" style="margin-top:10px; max-width:220px">Density (g/cm³)
+      <input id="add-density" type="number" min="0.5" max="2.5" step="0.01" value="1.24"></label>
+    <div class="row" style="margin-top:10px">
+      <label style="flex-direction:row; align-items:center; gap:6px; color:var(--text)"><input type="checkbox" id="add-load" checked> Load it now</label>
+    </div>
+    <div id="add-status" class="status"></div>
+  </section>
+
+  <section class="card">
+    <h2>Spools</h2>
+    <div id="list"><div class="empty">Connect to see the spools on your printer.</div></div>
+  </section>
+
+  <details class="card">
+    <summary>How the counting works</summary>
+    <p>During every print the printer counts the filament the extruder actually pushes and subtracts it from the loaded
+      spool when the print ends. "Grams left" of 0 means "not set": no warnings for that spool. Before a print, the printer warns
+      when the file needs more than is left, or when the file is for a different filament than the loaded spool.</p>
+    <p>Tip: in your slicer's filament profile, add <code>M1100 A2</code> (with your slot number) to the start G-code. Printing with
+      that profile then loads the matching spool by itself.</p>
+  </details>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const MAX = 8;
+let port = null, writer = null, reader = null, rxBuf = '', waiters = [];
+let spools = [];          // [{slot, name, density, left, used, loaded}]
+let sdCmds = [];          // commands queued for the SD file
+
+// ---------- tabs ----------
+// The SD file can't read the printer's list: start from the firmware defaults, new spools go to slot 2 and up
+const sdDefaults = () => [
+  { slot: 0, name: 'PLA', density: '1.24', left: 0, used: 0, loaded: true },
+  { slot: 1, name: 'PETG', density: '1.27', left: 0, used: 0, loaded: false },
+];
+function setMode(m) {
+  if (m !== mode() || !spools.length) { spools = m === 'sd' ? sdDefaults() : []; sdCmds = []; }
+  $('tab-usb').setAttribute('aria-selected', m === 'usb');
+  $('tab-sd').setAttribute('aria-selected', m === 'sd');
+  $('usb').classList.toggle('hidden', m !== 'usb');
+  $('sd').classList.toggle('hidden', m !== 'sd');
+  try { localStorage.setItem('sv06-spools-mode', m); } catch (e) {}
+  render();
+  if (m === 'usb' && writer) run('M1100', $('conn-status'));
+}
+const mode = () => ($('tab-sd').getAttribute('aria-selected') === 'true' ? 'sd' : 'usb');
+$('tab-usb').onclick = () => setMode('usb');
+$('tab-sd').onclick = () => setMode('sd');
+
+// ---------- serial ----------
+function status(el, text, kind) { el.textContent = text; el.className = 'status' + (kind ? ' ' + kind : ''); }
+
+async function readLoop() {
+  const dec = new TextDecoder();
+  while (port && reader) {
+    let r;
+    try { r = await reader.read(); } catch (e) { break; }
+    if (r.done) break;
+    rxBuf += dec.decode(r.value, { stream: true });
+    let i;
+    while ((i = rxBuf.indexOf('\n')) >= 0) {
+      const line = rxBuf.slice(0, i).trim(); rxBuf = rxBuf.slice(i + 1);
+      if (line) waiters.forEach((w) => w.lines.push(line));
+      if (line === 'ok' || line.startsWith('ok ')) { const w = waiters.shift(); if (w) w.done(w.lines); }
+    }
+  }
+}
+
+function send(cmd) {
+  return new Promise((resolve, reject) => {
+    const w = { lines: [], done: resolve };
+    waiters.push(w);
+    setTimeout(() => { const i = waiters.indexOf(w); if (i >= 0) { waiters.splice(i, 1); reject(new Error('The printer did not answer')); } }, 8000);
+    writer.write(new TextEncoder().encode(cmd + '\n'));
+  });
+}
+
+function parseList(lines) {
+  const out = [];
+  for (const l of lines) {
+    const m = l.match(/S(\d)\s+"([^"]*)"\s+D([\d.]+)\s+G(\d+)\s+U(\d+)(\s*\*)?/);
+    if (m) out.push({ slot: +m[1], name: m[2], density: m[3], left: +m[4], used: +m[5], loaded: !!m[6] });
+  }
+  return out;
+}
+const errorIn = (lines) => { const e = lines.find((l) => l.startsWith('Error:')); return e ? e.slice(6) : null; };
+
+async function run(cmd, statusEl) {
+  try {
+    const lines = await send(cmd);
+    const err = errorIn(lines);
+    if (err) { status(statusEl, err, 'err'); return false; }
+    const list = parseList(lines);
+    if (list.length || cmd === 'M1100') spools = list;
+    render();
+    return true;
+  } catch (e) { status(statusEl, e.message, 'err'); return false; }
+}
+
+$('connect').onclick = async () => {
+  if (!('serial' in navigator)) { status($('conn-status'), 'This browser can\'t use USB. Use Chrome or Edge, or the SD card file tab.', 'err'); return; }
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    writer = port.writable.getWriter(); reader = port.readable.getReader();
+    readLoop();
+    status($('conn-status'), 'Connected. Reading spools…');
+    await new Promise((r) => setTimeout(r, 600));
+    if (await run('M1100', $('conn-status'))) status($('conn-status'), 'Connected.', 'ok');
+    else if (!spools.length) status($('conn-status'), 'Connected, but no spool list came back. Is the firmware SV06 Reforged 1.1 or newer?', 'err');
+    $('refresh').disabled = false; $('connect').textContent = 'Reconnect';
+  } catch (e) { status($('conn-status'), e.message, 'err'); }
+};
+$('refresh').onclick = () => run('M1100', $('conn-status'));
+
+// ---------- add ----------
+$('add-mat').onchange = () => $('custom-wrap').classList.toggle('hidden', $('add-mat').value !== 'custom');
+
+function freeSlot() {
+  const used = new Set(spools.map((s) => s.slot));
+  for (let i = 0; i < MAX; i++) if (!used.has(i)) return i;
+  return -1;
+}
+const quote = (s) => '"' + s.replace(/"/g, '') + '"';
+
+$('add').onclick = async () => {
+  const name = $('add-name').value.trim().slice(0, 10).replace(/"/g, '');
+  const density = $('add-mat').value === 'custom' ? (+$('add-density').value).toFixed(2) : $('add-mat').value;
+  const grams = Math.max(0, Math.min(65535, Math.round(+$('add-grams').value || 0)));
+  const st = $('add-status');
+  if (!name) { status(st, 'Give the spool a name.', 'err'); return; }
+  if (spools.some((s) => s.name.toLowerCase() === name.toLowerCase())) { status(st, 'A spool with this name exists already.', 'err'); return; }
+  const slot = freeSlot();
+  if (slot < 0) { status(st, 'All 8 slots are used. Delete one first.', 'err'); return; }
+  const cmd = `M1100 S${slot} N${quote(name)} D${density} G${grams}` + ($('add-load').checked ? ` A${slot}` : '');
+  if (mode() === 'usb') {
+    if (!writer) { status(st, 'Connect to the printer first, or use the SD card file tab.', 'err'); return; }
+    if (await run(cmd, st)) status(st, `Added ${name}.`, 'ok');
+  } else {
+    sdCmds.push(cmd);
+    if ($('add-load').checked) spools.forEach((s) => (s.loaded = false));
+    spools.push({ slot, name, density, left: grams, used: 0, loaded: $('add-load').checked });
+    status(st, `Added ${name} to the file.`, 'ok');
+    render();
+  }
+  $('add-name').value = '';
+};
+
+// ---------- list actions ----------
+async function act(cmd, local) {
+  if (mode() === 'usb') { if (writer) await run(cmd, $('conn-status')); }
+  else { sdCmds.push(cmd); local(); render(); }
+}
+
+function render() {
+  const box = $('list');
+  const sd = mode() === 'sd';
+  $('download').disabled = !sdCmds.length; $('clear-sd').disabled = !sdCmds.length;
+  $('sd-preview').textContent = fileText();
+  if (!spools.length) {
+    box.innerHTML = `<div class="empty">${sd ? 'Spools you add for the file show up here.' : 'Connect to see the spools on your printer.'}</div>`;
+    return;
+  }
+  const rows = spools.slice().sort((a, b) => a.slot - b.slot).map((s) => `
+    <tr>
+      <td>${s.slot}</td>
+      <td>${esc(s.name)} ${s.loaded ? '<span class="loaded">· loaded</span>' : ''}</td>
+      <td class="num">${s.density}</td>
+      <td class="num"><input type="number" min="0" max="65535" step="10" value="${s.left}" data-slot="${s.slot}" aria-label="Grams left"></td>
+      <td class="num">${s.used} g</td>
+      <td class="row" style="flex-wrap:nowrap">
+        <button data-load="${s.slot}" ${s.loaded ? 'disabled' : ''}>Load</button>
+        <button data-del="${s.slot}">Delete</button>
+      </td>
+    </tr>`).join('');
+  box.innerHTML = `<table><thead><tr><th>Slot</th><th>Name</th><th>g/cm³</th><th>Grams left</th><th>Used</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="status">Grams left: type a number and press Enter. 0 = not set (no warnings).</p>`;
+  box.querySelectorAll('input[data-slot]').forEach((inp) => inp.addEventListener('change', () => {
+    const slot = +inp.dataset.slot, g = Math.max(0, Math.min(65535, Math.round(+inp.value || 0)));
+    act(`M1100 S${slot} G${g}`, () => { spools.find((s) => s.slot === slot).left = g; });
+  }));
+  box.querySelectorAll('button[data-load]').forEach((b) => b.onclick = () => {
+    const slot = +b.dataset.load;
+    act(`M1100 A${slot}`, () => spools.forEach((s) => (s.loaded = s.slot === slot)));
+  });
+  box.querySelectorAll('button[data-del]').forEach((b) => b.onclick = () => {
+    const slot = +b.dataset.del, s = spools.find((x) => x.slot === slot);
+    if (!confirm(`Delete ${s.name}?`)) return;
+    act(`M1100 S${slot} X`, () => { spools = spools.filter((x) => x.slot !== slot); });
+  });
+}
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ---------- SD file ----------
+function fileText() {
+  return ['; SV06 Reforged spool setup. Print this file from the SD card.', ...sdCmds, 'M1100 ; list spools', ''].join('\n');
+}
+$('download').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([fileText()], { type: 'text/plain' }));
+  a.download = 'spools.gcode'; a.click(); URL.revokeObjectURL(a.href);
+};
+$('clear-sd').onclick = () => { sdCmds = []; spools = sdDefaults(); render(); };
+
+let saved = 'usb';
+try { saved = localStorage.getItem('sv06-spools-mode') || 'usb'; } catch (e) {}
+setMode(saved === 'sd' ? 'sd' : 'usb');
+</script>
+</body>
+</html>
