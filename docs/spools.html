@@ -71,8 +71,8 @@
       <button id="refresh" disabled>Refresh</button>
       <span id="conn-status" class="status">Not connected.</span>
     </div>
-    <p class="status" style="margin:10px 0 0">Click Connect, then pick the printer's port: "USB2.0-Serial" or "USB-SERIAL CH340", not COM1. Works in Chrome and
-      Edge; Firefox asks twice for permission first.</p>
+    <p class="status" style="margin:10px 0 0">Pick the port named "USB2.0-Serial" or "CH340".</p>
+    <details style="margin-top:8px"><summary>Log</summary><pre id="log"></pre></details>
     <div>
     </div>
   </section>
@@ -157,6 +157,8 @@ $('tab-usb').onclick = () => setMode('usb');
 $('tab-sd').onclick = () => setMode('sd');
 
 // ---------- serial ----------
+const logLines = [];
+function log(t) { logLines.push(t); if (logLines.length > 200) logLines.shift(); $('log').textContent = logLines.join('\n'); }
 function status(el, text, kind) { el.textContent = text; el.className = 'status' + (kind ? ' ' + kind : ''); }
 
 async function readLoop() {
@@ -169,7 +171,7 @@ async function readLoop() {
     let i;
     while ((i = rxBuf.indexOf('\n')) >= 0) {
       const line = rxBuf.slice(0, i).trim(); rxBuf = rxBuf.slice(i + 1);
-      if (line) waiters.forEach((w) => w.lines.push(line));
+      if (line) { log('< ' + line); waiters.forEach((w) => w.lines.push(line)); }
       const item = parseList([line]);
       if (item.length) listBuf.push(item[0]);
       if (line === 'ok' || line.startsWith('ok ')) {
@@ -185,6 +187,7 @@ function send(cmd, timeout = 8000) {
     const w = { lines: [], done: resolve };
     waiters.push(w);
     setTimeout(() => { const i = waiters.indexOf(w); if (i >= 0) { waiters.splice(i, 1); reject(new Error('The printer did not answer')); } }, timeout);
+    log('> ' + cmd);
     writer.write(new TextEncoder().encode(cmd + '\n'));
   });
 }
@@ -214,7 +217,10 @@ $('connect').onclick = async () => {
   try {
     port = await navigator.serial.requestPort();
     await port.open({ baudRate: 115200 });
-    writer = port.writable.getWriter(); reader = port.readable.getReader();
+    // Like desktop serial tools: assert DTR/RTS, some CH340 adapters don't pass data without them
+    try { await port.setSignals({ dataTerminalReady: true, requestToSend: true }); } catch (e) { log('setSignals: ' + e.message); }
+    log('port open');
+    writer =port.writable.getWriter(); reader = port.readable.getReader();
     readLoop();
     // Keep asking for a while in case the printer is still starting up (up to ~15 s)
     status($('conn-status'), 'Waiting for the printer…');
@@ -227,7 +233,7 @@ $('connect').onclick = async () => {
     }
     $('refresh').disabled = false; $('connect').textContent = 'Reconnect';
     if (gotList) status($('conn-status'), 'Connected.', 'ok');
-    else if (!answered) status($('conn-status'), 'No answer. Is the printer on, and is this its port ("USB2.0-Serial" or "USB-SERIAL CH340")? Close other programs using it (Orca, Pronterface) and try again.', 'err');
+    else if (!answered) status($('conn-status'), 'No answer from the printer. Is it on, and is no other program (Orca, Pronterface) using the port?', 'err');
     else status($('conn-status'), err || 'The printer answers, but no spool list came back. Is the firmware SV06 Reforged 1.1 or newer?', 'err');
   } catch (e) { status($('conn-status'), e.message, 'err'); }
 };
