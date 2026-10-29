@@ -9,8 +9,8 @@ mistake can be undone by flashing again with the stock file.
   A good brand-name card is safer than the one that came with the printer.
 - The firmware file:
   - SV06 Reforged: the `.bin` from this repo's Releases
-  - stock Sovol V2.0.0_A, for going back: "Latest Firmware" for the SV06 on the official wiki,
-    https://wiki.sovol3d.com/en/SV06 (built 24.02.2023)
+  - stock Sovol V2.0.0_A, for going back: `SV06V2.0.0A_2.24-BCI.bin` (built 24.02.2023) from the official wiki,
+    https://wiki.sovol3d.com/en/SV06
 
 ## Steps
 
@@ -21,7 +21,7 @@ mistake can be undone by flashing again with the stock file.
 4. **Eject** the card in your operating system before pulling it out.
 5. Push the card fully into the printer until it clicks, and turn the printer on.
 6. Wait. The screen stays blank or blue for about 30 seconds while it flashes. Don't turn the printer off.
-7. SV06 Reforged starts by itself: boot logo, then `2.1.2.9`. If the saved settings don't match (always after
+7. SV06 Reforged starts by itself: boot logo, then `2.1.2.9-R1.0`. If the saved settings don't match (always after
    stock firmware), it shows an **EEPROM alert**: its "Reset" loads the firmware defaults (about 10 s, don't
    power off). Then set your Z offset again and run Level Bed.
    (Sovol's firmware instead asks to **Reset**. An "Err" after that Reset is normal, says Sovol: select Reset

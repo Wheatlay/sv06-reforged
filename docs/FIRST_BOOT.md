@@ -11,7 +11,7 @@ grinding noise, switch off immediately.
 
 ## 1. Flash and reset settings
 
-- [ ] Flash the SV06 Reforged `.bin` with a new file name. The boot logo appears, then `2.1.2.9`.
+- [ ] Flash the SV06 Reforged `.bin` with a new file name. The boot logo appears, then `2.1.2.9-R1.0`.
 - [ ] If an EEPROM alert appears, choose Reset (about 10 s, don't power off). Otherwise do Configuration >
   Restore Defaults, then Store Settings. Settings saved by the stock firmware use a different layout, so this step
   is not optional.
@@ -24,9 +24,9 @@ grinding noise, switch off immediately.
 ## 3. Homing
 
 - [ ] Move the nozzle to the middle by hand (printer powered, motors off), then Auto Home.
-- [ ] X goes **left**, Y goes **back** (bed towards you), Z comes down in the middle and probes.
+- [ ] The nozzle moves **left**, the bed moves **towards the front**, then Z comes down in the middle and probes.
 - [ ] Homing is quiet and stops softly at the ends. A loud bang means the sensorless homing sensitivity doesn't suit
-  your printer: stop and adjust it (`M914 X.. Y..`; the default is X 65 / Y 68).
+  your printer: stop, then raise it a little (default is Sovol's X 68 / Y 70, e.g. `M914 X72 Y74`, then `M500`).
 
 ## 4. Z offset and bed mesh
 

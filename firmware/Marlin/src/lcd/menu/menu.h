@@ -275,6 +275,9 @@ inline void clear_menu_history() { screen_history_depth = 0; }
 // SV06: Auto Home / Level Bed with a heat-up prompt (ported from Sovol stock UX)
 bool sv06_busy();
 void sv06_auto_home();
+#if ALL(PREHEAT_BEFORE_LEVELING, HAS_HOTEND, HAS_HEATED_BED)
+  void sv06_heat_then(FSTR_P const cmd);  // heat to the leveling temps, wait, then cmd
+#endif
 #if HAS_AUTOLEVEL && ENABLED(LCD_BED_LEVELING)
   void sv06_level_bed();
 #endif

@@ -1125,7 +1125,7 @@
 /**
  * Printed marks (SV06 custom)
  * Files printed to the end get a check mark (1x) or a count (2+) in the SD file list.
- * Stored in /PRINTED.TXT on the card.
+ * Stored in the printer's EEPROM from byte 1536, never on the card.
  */
 #define PRINTED_MARKS
 #if ENABLED(PRINTED_MARKS)
@@ -3214,9 +3214,9 @@
 
   #if EITHER(SENSORLESS_HOMING, SENSORLESS_PROBING)
     // TMC2209: 0...255. TMC2130: -64...63
-    #define X_STALL_SENSITIVITY 65
+    #define X_STALL_SENSITIVITY 68  // Sovol stock (tune per printer with M914, then M500)
     #define X2_STALL_SENSITIVITY X_STALL_SENSITIVITY
-    #define Y_STALL_SENSITIVITY 68
+    #define Y_STALL_SENSITIVITY 70  // Sovol stock
     #define Y2_STALL_SENSITIVITY Y_STALL_SENSITIVITY
     //#define Z_STALL_SENSITIVITY  8
     //#define Z2_STALL_SENSITIVITY Z_STALL_SENSITIVITY

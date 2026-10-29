@@ -1267,4 +1267,5 @@ extern GcodeSuite gcode;
 extern bool sv06_motion_busy;
 // SV06: an M73 P/R arrived in this print (the status screen then trusts only the slicer values)
 extern bool sv06_m73_seen;
-struct SV06BusyGuard { SV06BusyGuard() { sv06_motion_busy = true; } ~SV06BusyGuard() { sv06_motion_busy = false; } };
+// Restores the previous state, so the G28 that G29 runs inside doesn't clear the flag while G29 still probes
+struct SV06BusyGuard { const bool prev; SV06BusyGuard() : prev(sv06_motion_busy) { sv06_motion_busy = true; } ~SV06BusyGuard() { sv06_motion_busy = prev; } };

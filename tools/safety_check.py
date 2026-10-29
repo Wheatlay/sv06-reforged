@@ -44,8 +44,7 @@ RULES = {
         ("WATCH_BED_TEMP_PERIOD", "le"), ("WATCH_BED_TEMP_INCREASE", "ge"),
         ("X_CURRENT", "le"), ("Y_CURRENT", "le"), ("Z_CURRENT", "le"), ("E0_CURRENT", "le"),
         ("X_RSENSE", "eq"), ("Y_RSENSE", "eq"), ("Z_RSENSE", "eq"), ("E0_RSENSE", "eq"),
-        # Sensorless homing: the user's own tuned values from the printer (29.10.2026), not Sovol's 68/70
-        ("X_STALL_SENSITIVITY", "user:65"), ("Y_STALL_SENSITIVITY", "user:68"),
+        ("X_STALL_SENSITIVITY", "eq"), ("Y_STALL_SENSITIVITY", "eq"),
         ("PROBING_MARGIN_LEFT", "ge"), ("PROBING_MARGIN_RIGHT", "ge"),
         ("PROBING_MARGIN_FRONT", "ge"), ("PROBING_MARGIN_BACK", "ge"),
     ],

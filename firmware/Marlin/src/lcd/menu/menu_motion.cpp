@@ -185,24 +185,36 @@ void _menu_move_distance(const AxisEnum axis, const screenFunc_t func, const int
 // SV06: a G28/G29 is queued or running (repeated clicks are ignored)
 bool sv06_busy() { return sv06_motion_busy || queue.has_commands_queued(); }
 
-// SV06: Auto Home heats to the leveling temps first (probe reads differently cold), then homes
+// SV06: heat only the heaters set below the leveling temps (never lower a higher target), wait, then run cmd.
+// The probe reads differently cold, so homing and leveling both happen at the leveling temps.
 #if ALL(PREHEAT_BEFORE_LEVELING, HAS_HOTEND, HAS_HEATED_BED)
-  #define SV06_HEAT_GCODE "M140 S" STRINGIFY(LEVELING_BED_TEMP) "\nM104 S" STRINGIFY(LEVELING_NOZZLE_TEMP) \
-                          "\nM190 S" STRINGIFY(LEVELING_BED_TEMP) "\nM109 S" STRINGIFY(LEVELING_NOZZLE_TEMP) "\n"
   static bool sv06_cold() {
     return thermalManager.wholeDegHotend(0) < (LEVELING_NOZZLE_TEMP) - (TEMP_WINDOW)
         || thermalManager.wholeDegBed() < (LEVELING_BED_TEMP) - (TEMP_BED_WINDOW);
+  }
+
+  void sv06_heat_then(FSTR_P const cmd) {
+    const bool bed = thermalManager.degTargetBed() < (LEVELING_BED_TEMP),
+               hot = thermalManager.degTargetHotend(0) < (LEVELING_NOZZLE_TEMP);
+    char buf[64] = "";
+    if (bed) strcat_P(buf, PSTR("M140 S" STRINGIFY(LEVELING_BED_TEMP) "\n"));
+    if (hot) strcat_P(buf, PSTR("M104 S" STRINGIFY(LEVELING_NOZZLE_TEMP) "\n"));
+    if (bed) strcat_P(buf, PSTR("M190 S" STRINGIFY(LEVELING_BED_TEMP) "\n"));
+    if (hot) strcat_P(buf, PSTR("M109 S" STRINGIFY(LEVELING_NOZZLE_TEMP) "\n"));
+    strcat_P(buf, FTOP(cmd));
+    queue.inject(buf);
+    ui.return_to_status();
   }
 #endif
 
 void sv06_auto_home() {
   if (sv06_busy()) return ui.return_to_status();
-  #ifdef SV06_HEAT_GCODE
+  #if ALL(PREHEAT_BEFORE_LEVELING, HAS_HOTEND, HAS_HEATED_BED)
     if (sv06_cold()) {
       ui.goto_screen([]{
         MenuItem_confirm::select_screen(
           GET_TEXT_F(MSG_BUTTON_PROCEED), GET_TEXT_F(MSG_BACK),
-          []{ queue.inject(F(SV06_HEAT_GCODE "G28")); ui.return_to_status(); }, nullptr,
+          []{ sv06_heat_then(FPSTR(G28_STR)); }, nullptr,
           GET_TEXT_F(MSG_SV06_HEAT_HOME), (const char *)nullptr, F("")
         );
       });

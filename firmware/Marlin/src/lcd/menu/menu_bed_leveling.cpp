@@ -236,10 +236,19 @@
  */
 #if HAS_AUTOLEVEL
 
-  // SV06: Level Bed asks before heating (G29 preheats to the leveling temps); repeated clicks are ignored
+  // SV06: Level Bed asks before heating; repeated clicks are ignored
   static void sv06_do_level_bed() {
     queue.inject(all_axes_homed() ? F("G29") : F("G29N"));
     ui.return_to_status();
+  }
+
+  // Cold: heat first, so G29N doesn't home Z with a cold probe before G29's own preheat
+  static void sv06_heat_and_level_bed() {
+    #if ALL(PREHEAT_BEFORE_LEVELING, HAS_HOTEND, HAS_HEATED_BED)
+      sv06_heat_then(all_axes_homed() ? F("G29") : F("G29N"));
+    #else
+      sv06_do_level_bed();
+    #endif
   }
 
   void sv06_level_bed() {
@@ -250,7 +259,7 @@
         ui.goto_screen([]{
           MenuItem_confirm::select_screen(
             GET_TEXT_F(MSG_BUTTON_PROCEED), GET_TEXT_F(MSG_BACK),
-            sv06_do_level_bed, nullptr,
+            sv06_heat_and_level_bed, nullptr,
             GET_TEXT_F(MSG_SV06_HEAT_LEVEL), (const char *)nullptr, F("")
           );
         });
