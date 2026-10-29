@@ -71,7 +71,7 @@
       <button id="refresh" disabled>Refresh</button>
       <span id="conn-status" class="status">Not connected.</span>
     </div>
-    <p class="status" style="margin:10px 0 0">Click Connect, then pick the printer's port (usually "USB-SERIAL CH340"). Works in Chrome and
+    <p class="status" style="margin:10px 0 0">Click Connect, then pick the printer's port: "USB2.0-Serial" or "USB-SERIAL CH340", not COM1. Works in Chrome and
       Edge; Firefox asks twice for permission first.</p>
     <div>
     </div>
@@ -218,7 +218,7 @@ $('connect').onclick = async () => {
     for (let i = 0; i < 8 && !lines; i++) {
       try { lines = await send('M1100', 2000); } catch (e) { waiters = []; }
     }
-    if (!lines) { status($('conn-status'), 'No answer. Is the printer on, and is this its port (USB-SERIAL CH340)? Close other programs using it (Orca, Pronterface) and try again.', 'err'); return; }
+    if (!lines) { status($('conn-status'), 'No answer. Is the printer on, and is this its port ("USB2.0-Serial" or "USB-SERIAL CH340")? Close other programs using it (Orca, Pronterface) and try again.', 'err'); return; }
     if (errorIn(lines)) { status($('conn-status'), errorIn(lines), 'err'); return; }
     spools = parseList(lines); render();
     if (spools.length) status($('conn-status'), 'Connected.', 'ok');
