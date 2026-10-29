@@ -243,19 +243,40 @@ void menu_configuration();
 #endif
 
 #if ENABLED(SPOOL_TRACKER)
-  // SV06: grams left per type (knob step 10 g), new 1 kg spool shortcuts, used totals
+  // SV06: choose the loaded spool. Labels are built at draw time ("<name> <left>g"); one function per slot
+  // because a menu action has no argument.
+  template<uint8_t I> static void spool_choose() { spool.select(I); ui.goto_previous_screen(); }
+  static void (* const spool_choose_fn[SPOOL_MAX])() = {
+    spool_choose<0>, spool_choose<1>, spool_choose<2>, spool_choose<3>,
+    spool_choose<4>, spool_choose<5>, spool_choose<6>, spool_choose<7>
+  };
+
+  static void menu_spool_choose() {
+    static char label[SPOOL_MAX][SPOOL_NAME_LEN + 8];
+    START_MENU();
+    BACK_ITEM(MSG_BACK);
+    for (uint8_t i = 0; i < SPOOL_MAX; i++) {
+      const Spool &s = spool.spools[i];
+      if (!s.name[0]) continue;
+      if (s.grams_left) sprintf_P(label[i], PSTR("%s %ug"), s.name, uint16_t(s.grams_left));
+      else sprintf_P(label[i], PSTR("%s --"), s.name);
+      ACTION_ITEM_F(FSTR_P(label[i]), spool_choose_fn[i]);
+    }
+    END_MENU();
+  }
+
+  // SV06: loaded spool, grams left (knob step 10 g), new 1 kg spool shortcut, used total
   static void menu_spools() {
     START_MENU();
     BACK_ITEM(MSG_BACK);
-    EDIT_ITEM(uint16_4, MSG_SPOOL_PLA_LEFT, &spool.grams_left[SPOOL_PLA], 0, 3000, spool.save);
-    EDIT_ITEM(uint16_4, MSG_SPOOL_PETG_LEFT, &spool.grams_left[SPOOL_PETG], 0, 3000, spool.save);
-    ACTION_ITEM(MSG_SPOOL_NEW_PLA, spool.new_spool_pla);
-    ACTION_ITEM(MSG_SPOOL_NEW_PETG, spool.new_spool_petg);
-    char used[SPOOL_COUNT][14];
-    sprintf_P(used[SPOOL_PLA], PSTR(": %lu g"), (unsigned long)spool.grams_used[SPOOL_PLA]);
-    sprintf_P(used[SPOOL_PETG], PSTR(": %lu g"), (unsigned long)spool.grams_used[SPOOL_PETG]);
-    STATIC_ITEM(MSG_SPOOL_USED_PLA, SS_LEFT, used[SPOOL_PLA]);
-    STATIC_ITEM(MSG_SPOOL_USED_PETG, SS_LEFT, used[SPOOL_PETG]);
+    char loaded[SPOOL_NAME_LEN + 12];
+    sprintf_P(loaded, PSTR("%s: %s"), GET_TEXT(MSG_SPOOL_LOADED), spool.cur().name);
+    SUBMENU_F(FSTR_P(loaded), menu_spool_choose);
+    EDIT_ITEM(uint16_4, MSG_SPOOL_LEFT, &spool.spools[spool.active].grams_left, 0, 3000, spool.save);
+    ACTION_ITEM(MSG_SPOOL_NEW, spool.new_spool_1kg);
+    char used[14];
+    sprintf_P(used, PSTR(": %lu g"), (unsigned long)spool.cur().grams_used);
+    STATIC_ITEM(MSG_SPOOL_USED, SS_LEFT, used);
     ACTION_ITEM(MSG_SPOOL_RESET_USED, spool.reset_used);
     END_MENU();
   }

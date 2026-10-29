@@ -265,11 +265,9 @@ void MarlinUI::draw_status_screen() {
   }
   #if ENABLED(SPOOL_TRACKER)
     else {
-      // SV06: grams left per type, "--" = not set
-      char pla[8] = "--", petg[8] = "--";
-      if (spool.grams_left[SPOOL_PLA])  sprintf_P(pla, PSTR("%ug"), uint16_t(spool.grams_left[SPOOL_PLA]));
-      if (spool.grams_left[SPOOL_PETG]) sprintf_P(petg, PSTR("%ug"), uint16_t(spool.grams_left[SPOOL_PETG]));
-      sprintf_P(buf, PSTR("PLA %s  PETG %s"), pla, petg);
+      // SV06: loaded spool and grams left, "--" = not set
+      if (spool.cur().grams_left) sprintf_P(buf, PSTR("%s %ug"), spool.cur().name, uint16_t(spool.cur().grams_left));
+      else sprintf_P(buf, PSTR("%s --"), spool.cur().name);
       menu_font();
       u8g.drawStr((128 - u8g.getStrWidth(buf)) / 2, 50, buf);
     }
@@ -290,15 +288,15 @@ void MarlinUI::draw_status_screen() {
   }
   else if (state == ST_PRINT) {
     if (card.isFileOpen()) {
-      // 32 chars fit in 4x6; longer names scroll (2 s pause at each end, 3 chars/s)
+      // 32 chars fit in 4x6; longer names scroll 1 char/s (the LCD redraws ~2x/s), 3 s pause at each end
       const char * const name = card.longest_filename();
       const uint8_t len = strlen(name);
       uint8_t ofs = 0;
       if (len > 32) {
-        const uint8_t span = len - 32, cycle = span + 12;
-        const uint8_t t = (millis() / 333UL) % (2 * cycle);
+        const uint8_t span = len - 32, cycle = span + 6;
+        const uint8_t t = (millis() / 1000UL) % (2 * cycle);
         const uint8_t pos = t < cycle ? t : 2 * cycle - 1 - t;   // forward, then back
-        ofs = pos < 6 ? 0 : _MIN(uint8_t(pos - 6), span);
+        ofs = pos < 3 ? 0 : _MIN(uint8_t(pos - 3), span);
       }
       u8g.drawStr(0, 63, name + ofs);
     }

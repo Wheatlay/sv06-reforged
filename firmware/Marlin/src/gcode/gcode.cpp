@@ -1080,8 +1080,10 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 1000: M1000(); break;                                // M1000: [INTERNAL] Resume from power-loss
       #endif
 
+      TERN_(SPOOL_TRACKER, case 1100: M1100(); break;)            // M1100: SV06 spool tracker: list / define / load spools
+
       #if HAS_MEDIA
-        case 1001: M1001(); break;                                // M1001: [INTERNAL] Handle SD completion
+        case 1001: M1001(); break;                              // M1001: [INTERNAL] Handle SD completion
       #endif
 
       #if ENABLED(DGUS_LCD_UI_MKS)

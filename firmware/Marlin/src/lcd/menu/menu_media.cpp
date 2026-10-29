@@ -96,8 +96,13 @@ inline void sdcard_start_selected_file() {
     #if ENABLED(SPOOL_TRACKER)
       if (spool.pending_low()) {
         static char need_left[24];
-        sprintf_P(need_left, PSTR("%ug > %ug left"), uint16_t(spool.pending_grams), uint16_t(spool.grams_left[spool.pending_type]));
+        sprintf_P(need_left, PSTR("%ug > %ug left"), uint16_t(spool.pending_grams), uint16_t(spool.cur().grams_left));
         STATIC_ITEM(MSG_SPOOL_LOW, SS_LEFT, need_left);
+      }
+      if (spool.pending_mismatch()) {
+        static char type_name[24];
+        sprintf_P(type_name, PSTR("%s / %s"), spool.pending_type, spool.cur().name);
+        STATIC_ITEM(MSG_SPOOL_MISMATCH, SS_LEFT, type_name);
       }
     #endif
     ACTION_ITEM(MSG_PRINT_NOW, sdcard_start_selected_file);

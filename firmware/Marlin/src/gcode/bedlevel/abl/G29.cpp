@@ -232,6 +232,7 @@ public:
  */
 G29_TYPE GcodeSuite::G29() {
   SV06BusyGuard sv06_busy;
+  TERN_(HAS_STATUS_MESSAGE, ui.reset_alert_level()); // SV06: a new attempt clears an old "Err: ZPROBE" alert
 
   DEBUG_SECTION(log_G29, "G29", DEBUGGING(LEVELING));
 

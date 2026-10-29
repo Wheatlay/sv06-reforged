@@ -277,6 +277,11 @@ void GCodeParser::parse(char *p) {
     case 23: case 28: case 30: case 117 ... 118: case 928:
       string_arg = unescape_string(p);
       return;
+    #if ENABLED(SPOOL_TRACKER)
+      case 1100: // SV06: M1100 parses its own raw argument text (names with spaces, quotes)
+        string_arg = *p ? p : nullptr;
+        return;
+    #endif
     default: break;
   }
 

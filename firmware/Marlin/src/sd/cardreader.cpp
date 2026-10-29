@@ -471,6 +471,10 @@ void CardReader::mount() {
   if (flag.mounted) {
     cdroot();
     TERN_(PRINTED_MARKS, printed_marks.load());
+    // SV06: a retry that mounts clears a sticky "Media Init Fail" alert from a first try while the card was going in
+    #if HAS_STATUS_MESSAGE
+      if (marlin_state != MF_INITIALIZING) { ui.reset_alert_level(); ui.reset_status(true); }
+    #endif
   }
   else {
     #if ANY(HAS_SD_DETECT, USB_FLASH_DRIVE_SUPPORT)
@@ -585,6 +589,7 @@ void CardReader::startOrResumeFilePrinting() {
   if (isMounted()) {
     flag.sdprinting = true;
     flag.sdprintdone = false;
+    TERN_(HAS_STATUS_MESSAGE, ui.reset_alert_level()); // SV06: old alerts don't outlive a new print
     TERN_(SD_RESORT, flush_presort());
   }
 }

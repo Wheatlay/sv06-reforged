@@ -20,37 +20,43 @@
 #pragma once
 
 /**
- * SV06 spool tracker: grams of filament left per type (PLA, PETG), counted from the net
- * extrusion of each job and kept in the EEPROM. The type comes from the file's
- * "; filament_type" comment, or from the hotend temperature if the file has none.
+ * SV06 spool tracker: up to 8 user-defined spools (name, density, grams left, grams used).
+ * One of them is "loaded" (chosen in the menu or with M1100 A); the net extrusion of each
+ * job is counted against it. Kept in the EEPROM.
  */
 
 #include "../inc/MarlinConfig.h"
 
-enum SpoolType : int8_t { SPOOL_NONE = -1, SPOOL_PLA = 0, SPOOL_PETG = 1, SPOOL_COUNT = 2 };
+#define SPOOL_MAX       8
+#define SPOOL_NAME_LEN  10   // chars, without the terminator
+
+struct Spool {
+  char     name[SPOOL_NAME_LEN + 1]; // "" = empty slot
+  uint8_t  density_cg;               // g/cm3 x100, e.g. 124 = 1.24
+  uint16_t grams_left;               // 0 = not set (no warning, shown "--"), 1 = empty
+  uint32_t grams_used;
+  uint8_t  carry_cg;                 // 0-99, fraction of a gram carried to the next print
+};
 
 class SpoolTracker {
 public:
-  static uint16_t grams_left[SPOOL_COUNT];   // 0 = not set (no warning, shown as "--")
-  static uint32_t grams_used[SPOOL_COUNT];   // totals since the last reset
-  static bool counting;                      // true while a job runs; the planner adds to extruded_mm
-  static float extruded_mm;                  // net filament length pushed during the current job
-  static int8_t pending_type;                // set when a file is chosen in the menu (from the file), SPOOL_NONE if unknown
-  static uint16_t pending_grams;             // grams the chosen file needs, 0 = unknown
+  static Spool spools[SPOOL_MAX];
+  static uint8_t active;             // index of the loaded spool (always a non-empty slot)
+  static bool counting;              // true while a job runs; the planner adds to extruded_mm
+  static float extruded_mm;          // net filament length pushed during the current job
+  static uint16_t pending_grams;     // grams the chosen file needs, 0 = unknown
+  static char pending_type[8];       // file's "; filament_type", "" = unknown
 
-  static void load();                        // EEPROM -> RAM, at boot
-  static void save();                        // RAM -> EEPROM
-  static void task();                        // From idle(): detects job start/end
+  static void load();                // EEPROM -> RAM, at boot
+  static void save();                // RAM -> EEPROM
+  static void task();                // From idle(): detects job start/end
   static void file_chosen(const char *abs_path); // Read slicer info into pending_*
-  static bool pending_low();                 // The chosen file needs more than is left (with 5% margin)
-  static int8_t type_from_name(const char *s);
-  static void new_spool_pla();               // grams_left[PLA] = 1000
-  static void new_spool_petg();              // grams_left[PETG] = 1000
-  static void reset_used();                  // grams_used[] = 0
-
-private:
-  static int8_t job_type;                    // Type for the running job (from pending_type at job start)
-  static celsius_t max_hotend_target;        // Highest hotend target seen during the job (fallback type)
+  static bool pending_low();         // The chosen file needs more than is left (with 5% margin)
+  static bool pending_mismatch();    // The file's filament type differs from the loaded spool's name
+  static void new_spool_1kg();       // Loaded spool: grams_left = 1000
+  static void reset_used();          // Loaded spool: grams_used = 0
+  static void select(uint8_t i);     // Load slot i (if not empty)
+  static Spool& cur() { return spools[active]; }
 };
 
 extern SpoolTracker spool;

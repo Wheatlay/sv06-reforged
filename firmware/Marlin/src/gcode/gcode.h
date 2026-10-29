@@ -1232,6 +1232,8 @@ private:
     static void M423_report(const bool forReplay=true);
   #endif
 
+  TERN_(SPOOL_TRACKER, static void M1100());
+
   #if HAS_MEDIA
     static void M1001();
   #endif

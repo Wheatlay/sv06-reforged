@@ -10,8 +10,10 @@ V2.0.0_A): if your printer has one, it is ignored.
 
 ## Features
 
-- **Spool tracker.** The printer keeps track of how many grams of PLA and PETG you have left, counted from what the
-  extruder actually pushed. Before a print it warns you when the file needs more than is left.
+- **Spool tracker.** The printer keeps track of how many grams are left on up to 8 spools, counted from what the
+  extruder actually pushed. Pick the loaded spool in the menu. Before a print it warns you when the file needs more
+  than is left, or when the file is for a different filament. Add or rename spools from your PC with `M1100`
+  (see below).
 - **Night mode.** One switch in the menu makes printing slow and quiet for overnight prints, whatever the file asks
   for, and mutes the beeper.
 - **Delayed start.** Pick a file, choose "Start later" (30 minutes to 24 hours), and the screen counts down. At the
@@ -29,6 +31,22 @@ V2.0.0_A): if your printer has one, it is ignored.
 
 - **Input shaping and linear advance** for cleaner corners at speed.
 - **Bed mesh always on.** The mesh is applied after every homing, with no extra start G-code needed.
+
+## Managing spools from your PC
+
+Send these over USB (e.g. Pronterface), or save them as a `.gcode` file and print it from the card. Slots are 0 to 7;
+PLA and PETG are set up by default.
+
+```gcode
+M1100                              ; list spools (* = loaded)
+M1100 S2 N"PLA Red" D1.24 G1000    ; slot 2: name, density (g/cm3), grams left
+M1100 A2                           ; load slot 2
+M1100 S2 G640                      ; set grams left
+M1100 S2 X                         ; delete slot 2
+```
+
+Tip: put `M1100 A2` in a filament profile's start G-code in your slicer, and printing with that profile loads the
+matching spool by itself.
 
 ## FAQ
 

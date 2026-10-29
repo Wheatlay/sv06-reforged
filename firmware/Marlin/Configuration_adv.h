@@ -1132,12 +1132,7 @@
   #define PRINTED_MARKS_MAX 48   // Files remembered (oldest dropped first)
 #endif
 
-#define SPOOL_TRACKER     // SV06: grams left per filament type, counted from extrusion; warns before a print that needs more
-#if ENABLED(SPOOL_TRACKER)
-  #define SPOOL_DENSITY_PLA    1.24  // (g/cm3)
-  #define SPOOL_DENSITY_PETG   1.27
-  #define SPOOL_PETG_MIN_TEMP  220   // (°C) files without "; filament_type": hotend target at/above this counts as PETG
-#endif
+#define SPOOL_TRACKER     // SV06: grams left per spool (up to 8, edit with M1100), counted from extrusion into the spool chosen in the menu
 
 // @section motion
 

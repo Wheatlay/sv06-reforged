@@ -203,6 +203,7 @@
  */
 void GcodeSuite::G28() {
   SV06BusyGuard sv06_busy;
+  TERN_(HAS_STATUS_MESSAGE, ui.reset_alert_level()); // SV06: a new attempt clears an old "Err: ZPROBE" alert
   DEBUG_SECTION(log_G28, "G28", DEBUGGING(LEVELING));
   if (DEBUGGING(LEVELING)) log_machine_info();
 

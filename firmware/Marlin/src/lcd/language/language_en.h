@@ -869,12 +869,11 @@ namespace Language_en {
   LSTR MSG_SV06_NO_FILE                   = _UxGT("Insert card");
   LSTR MSG_SV06_CHOOSE_FILE               = _UxGT("Card ready: choose a file");
   LSTR MSG_SPOOLS                         = _UxGT("Spools");
-  LSTR MSG_SPOOL_PLA_LEFT                 = _UxGT("PLA left g");
-  LSTR MSG_SPOOL_PETG_LEFT                = _UxGT("PETG left g");
-  LSTR MSG_SPOOL_NEW_PLA                  = _UxGT("New PLA spool 1kg");
-  LSTR MSG_SPOOL_NEW_PETG                 = _UxGT("New PETG spool 1kg");
-  LSTR MSG_SPOOL_USED_PLA                 = _UxGT("PLA used");
-  LSTR MSG_SPOOL_USED_PETG                = _UxGT("PETG used");
+  LSTR MSG_SPOOL_LOADED                   = _UxGT("Loaded");
+  LSTR MSG_SPOOL_LEFT                     = _UxGT("Left g");
+  LSTR MSG_SPOOL_NEW                      = _UxGT("New spool 1kg");
+  LSTR MSG_SPOOL_USED                     = _UxGT("Used");
+  LSTR MSG_SPOOL_MISMATCH                 = _UxGT("Other filament!");
   LSTR MSG_SPOOL_RESET_USED               = _UxGT("Reset used totals");
   LSTR MSG_SPOOL_LOW                      = _UxGT("Low filament!");
 
