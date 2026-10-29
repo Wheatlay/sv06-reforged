@@ -1,0 +1,7 @@
+.pio/
+firmware/.pio/
+sovol-stock/
+*.elf
+*.map
+*.bin
+__pycache__/

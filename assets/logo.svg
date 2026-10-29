@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t">
+  <title id="t">SV06 Reforged</title>
+  <defs>
+    <linearGradient id="ember" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd166"/>
+      <stop offset="0.55" stop-color="#ff7a1a"/>
+      <stop offset="1" stop-color="#d63a16"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#1b1e24"/>
+  <!-- hotend: heater block and nozzle -->
+  <rect x="196" y="58" width="120" height="70" rx="10" fill="#c9ced6"/>
+  <rect x="236" y="38" width="40" height="24" rx="4" fill="#8d949e"/>
+  <path d="M220 128 h72 l-18 46 h-36 z" fill="#c9ced6"/>
+  <path d="M244 174 h24 l-6 18 h-12 z" fill="#8d949e"/>
+  <!-- glowing drop of filament -->
+  <path d="M256 200 c-14 22 -22 36 -22 48 a22 22 0 0 0 44 0 c0 -12 -8 -26 -22 -48 z" fill="url(#ember)"/>
+  <!-- sparks -->
+  <g stroke="#ffb347" stroke-width="8" stroke-linecap="round">
+    <path d="M196 236 l-26 -14"/>
+    <path d="M316 236 l26 -14"/>
+    <path d="M206 276 l-30 6"/>
+    <path d="M306 276 l30 6"/>
+  </g>
+  <!-- anvil -->
+  <path d="M96 300 h300 c0 28 -22 44 -60 48 l-16 2 v26 h46 v40 h-220 v-40 h46 v-26 l-40 -6 c-36 -6 -56 -24 -56 -44 z" fill="#e8eaee"/>
+  <path d="M396 300 h30 c0 10 -12 18 -30 22 z" fill="#e8eaee"/>
+  <!-- glowing seam on the anvil face -->
+  <rect x="110" y="300" width="280" height="10" rx="5" fill="url(#ember)"/>
+</svg>

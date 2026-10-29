@@ -1,0 +1,66 @@
+  <section class="card">
+    <h2>Status screen (proposal)</h2>
+    <p class="lead" style="margin:0 0 12px">Drawn pixel for pixel on the real 128×64 grid with real U8glib fonts and the stock icons (trimmed to fit). Temperatures on top, with targets underneath only while heating; two times with the night-mode moon between them; the progress bar with the percentage inside; the file name at the bottom. Messages replace the file name while printing and "Ready" while idle.</p>
+    <div class="grid" style="grid-template-columns:minmax(0,520px) minmax(0,1fr)">
+      <div>
+        <div class="printer"><canvas id="scv" width="512" height="256" style="width:100%;max-width:512px;image-rendering:pixelated;border-radius:3px"></canvas></div>
+        <div class="mode" role="group" aria-label="Preview state">
+          <button class="btn" data-st="print" aria-pressed="true">Printing</button>
+          <button class="btn" data-st="idle" aria-pressed="false">Idle</button>
+          <button class="btn" data-st="wait" aria-pressed="false">Waiting to start</button>
+          <button class="btn" data-st="paused" aria-pressed="false">Paused</button>
+        </div>
+      </div>
+      <div class="opts" style="display:grid;gap:12px;min-width:0">
+        <label>Font for the big time
+          <select id="o_font">
+            <option value="font_9x18Br">Bold 9×18</option>
+            <option value="font_10x20r">Regular 10×20</option>
+            <option value="font_7x14Br">Bold 7×14 (smaller)</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="o_heat"> Nozzle still heating (212° of 240°)</label>
+        <label><input type="checkbox" id="o_night" checked> Night mode on (moon icon)</label>
+        <label><input type="checkbox" id="o_msg"> Show a printer message</label>
+        <p class="hint" style="margin:0">Time left comes from the M73 lines OrcaSlicer already writes.</p>
+      </div>
+    </div>
+    <textarea id="sout" readonly aria-label="Status screen choices to paste into the chat"></textarea>
+    <div style="margin-top:8px"><button class="btn primary" id="scopy">Copy choices</button> <span class="copied" id="scopied" hidden>Copied</span></div>
+  </section>
+</div>
+<style>
+.opts label{display:grid;gap:4px;font-size:.9rem;color:var(--muted)}
+.opts label:has(input){display:flex;align-items:center;gap:8px;color:var(--fg)}
+.opts select{font:14px var(--f-body);padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);max-width:100%}
+</style>
+<script id="lcd-assets" type="application/json">/*ASSETS*/</script>
+<script>
+/*LCD_JS*/
+</script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const A = JSON.parse($('lcd-assets').textContent);
+  let state = 'print', frame = 0;
+  function draw(){
+    const paused = state === 'paused', p = state === 'print' || paused, font = $('o_font');
+    const msg = $('o_msg').checked ? (p ? 'Filament change: press knob' : 'Probing bed...') : '';
+    const s = LCD.drawStatus(A, {
+      state: paused ? 'print' : state, paused, blink: frame % 2 === 1, frame, msg,
+      night: $('o_night').checked, fonts: {big: font.value},
+      hot: p ? {cur: $('o_heat').checked ? 212 : 240, tgt:240} : {cur:24,tgt:0}, bed: p ? {cur:80,tgt:80} : {cur:23,tgt:0}, fan: p && !paused ? 60 : 0,
+      pct: 83.7, left:'1:48', elapsed:'9:54', total:'11:49',
+      file:'plate_02_11h49m_228g.gcode', startsIn:'2:45', waitPct:35 });
+    LCD.paint($('scv').getContext('2d'), s, 4);
+    $('sout').value = `SV06 status screen choices:\n- Layout: v3 (stock icons, moon in the middle)\n- Big time font: ${font.options[font.selectedIndex].text}`;
+  }
+  // fan animation and paused blink
+  setInterval(() => { frame++; draw(); }, 600);
+  document.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
+    state = b.dataset.st; document.querySelectorAll('[data-st]').forEach(x => x.setAttribute('aria-pressed', x === b)); draw(); });
+  ['o_font','o_heat','o_night','o_msg'].forEach(id => $(id).onchange = draw);
+  $('scopy').onclick = () => { const ok=$('scopied'); navigator.clipboard.writeText($('sout').value).then(()=>{ok.hidden=false;setTimeout(()=>ok.hidden=true,1500)}).catch(()=>$('sout').select()); };
+  draw();
+})();
+</script>
