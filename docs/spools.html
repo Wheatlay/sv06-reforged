@@ -132,6 +132,7 @@
 const $ = (id) => document.getElementById(id);
 const MAX = 8;
 let port = null, writer = null, reader = null, rxBuf = '', waiters = [];
+let listBuf = [], gotList = false;   // spool lines are collected from any reply; "ok" closes a list
 let spools = [];          // [{slot, name, density, left, used, loaded}]
 let sdCmds = [];          // commands queued for the SD file
 
@@ -169,7 +170,12 @@ async function readLoop() {
     while ((i = rxBuf.indexOf('\n')) >= 0) {
       const line = rxBuf.slice(0, i).trim(); rxBuf = rxBuf.slice(i + 1);
       if (line) waiters.forEach((w) => w.lines.push(line));
-      if (line === 'ok' || line.startsWith('ok ')) { const w = waiters.shift(); if (w) w.done(w.lines); }
+      const item = parseList([line]);
+      if (item.length) listBuf.push(item[0]);
+      if (line === 'ok' || line.startsWith('ok ')) {
+        if (listBuf.length) { spools = listBuf; listBuf = []; gotList = true; render(); }
+        const w = waiters.shift(); if (w) w.done(w.lines);
+      }
     }
   }
 }
@@ -198,9 +204,7 @@ async function run(cmd, statusEl) {
     const lines = await send(cmd);
     const err = errorIn(lines);
     if (err) { status(statusEl, err, 'err'); return false; }
-    const list = parseList(lines);
-    if (list.length || cmd === 'M1100') spools = list;
-    render();
+    render();   // the spool list itself is picked up by the read loop
     return true;
   } catch (e) { status(statusEl, e.message, 'err'); return false; }
 }
@@ -214,16 +218,17 @@ $('connect').onclick = async () => {
     readLoop();
     // Keep asking for a while in case the printer is still starting up (up to ~15 s)
     status($('conn-status'), 'Waiting for the printer…');
-    let lines = null;
-    for (let i = 0; i < 8 && !lines; i++) {
-      try { lines = await send('M1100', 2000); } catch (e) { waiters = []; }
+    let answered = false, err = null;
+    gotList = false;
+    for (let i = 0; i < 8 && !gotList; i++) {
+      try { const lines = await send('M1100', 2000); answered = true; err = errorIn(lines) || err; }
+      catch (e) { waiters = []; }
+      if (!gotList) await new Promise((r) => setTimeout(r, 300));
     }
-    if (!lines) { status($('conn-status'), 'No answer. Is the printer on, and is this its port ("USB2.0-Serial" or "USB-SERIAL CH340")? Close other programs using it (Orca, Pronterface) and try again.', 'err'); return; }
-    if (errorIn(lines)) { status($('conn-status'), errorIn(lines), 'err'); return; }
-    spools = parseList(lines); render();
-    if (spools.length) status($('conn-status'), 'Connected.', 'ok');
-    else status($('conn-status'), 'Connected, but no spool list came back. Is the firmware SV06 Reforged 1.1 or newer?', 'err');
     $('refresh').disabled = false; $('connect').textContent = 'Reconnect';
+    if (gotList) status($('conn-status'), 'Connected.', 'ok');
+    else if (!answered) status($('conn-status'), 'No answer. Is the printer on, and is this its port ("USB2.0-Serial" or "USB-SERIAL CH340")? Close other programs using it (Orca, Pronterface) and try again.', 'err');
+    else status($('conn-status'), err || 'The printer answers, but no spool list came back. Is the firmware SV06 Reforged 1.1 or newer?', 'err');
   } catch (e) { status($('conn-status'), e.message, 'err'); }
 };
 $('refresh').onclick = () => run('M1100', $('conn-status'));
