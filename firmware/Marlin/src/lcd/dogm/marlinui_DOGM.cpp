@@ -419,6 +419,13 @@ void MarlinUI::clear_lcd() { } // Automatically cleared by Picture Loop
     if (mark_as_selected(row, style & SS_INVERT)) {
       pixel_len_t n = LCD_PIXEL_WIDTH; // pixel width of string allowed
 
+      // SV06: warnings get a solid box with the text cut out of it
+      if (style & SS_WARN) {
+        u8g.setColorIndex(1);
+        u8g.drawBox(0, row_y1 + 2, LCD_PIXEL_WIDTH, MENU_FONT_HEIGHT - 1);
+        u8g.setColorIndex(0);
+      }
+
       const int plen = ftpl ? calculateWidth(ftpl) : 0,
                 vlen = vstr ? utf8_strlen(vstr) : 0;
       if (style & SS_CENTER) {
@@ -429,6 +436,7 @@ void MarlinUI::clear_lcd() { } // Automatically cleared by Picture Loop
       if (plen) n = lcd_put_u8str(ftpl, itemIndex, itemStringC, itemStringF, n / (MENU_FONT_WIDTH)) * (MENU_FONT_WIDTH);
       if (vlen) n -= lcd_put_u8str_max(vstr, n);
       while (n > MENU_FONT_WIDTH) n -= lcd_put_u8str(F(" "));
+      if (style & SS_WARN) u8g.setColorIndex(1);
     }
   }
 

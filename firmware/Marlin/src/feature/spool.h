@@ -30,8 +30,15 @@
 #define SPOOL_MAX       8
 #define SPOOL_NAME_LEN  10   // chars, without the terminator
 
+enum SpoolMaterial : uint8_t { MAT_OTHER = 0, MAT_PLA, MAT_PETG, MAT_ABS, MAT_ASA, MAT_TPU, MAT_COUNT };
+
+const char* material_name(uint8_t m);               // "Other", "PLA", ...
+uint8_t material_from_name(const char *s);          // case-insensitive prefix, 0xFF = unknown
+uint8_t material_density_cg(uint8_t m);             // typical density x100
+
 struct Spool {
   char     name[SPOOL_NAME_LEN + 1]; // "" = empty slot
+  uint8_t  material;                 // SpoolMaterial
   uint8_t  density_cg;               // g/cm3 x100, e.g. 124 = 1.24
   uint16_t grams_left;               // 0 = not set (no warning, shown "--"), 1 = empty
   uint32_t grams_used;
@@ -45,14 +52,17 @@ public:
   static bool counting;              // true while a job runs; the planner adds to extruded_mm
   static float extruded_mm;          // net filament length pushed during the current job
   static uint16_t pending_grams;     // grams the chosen file needs, 0 = unknown
-  static char pending_type[8];       // file's "; filament_type", "" = unknown
+  static int8_t pending_spool;       // spool chosen for the chosen file, -1 = none
+  static uint8_t pending_material;   // file's "; filament_type" as SpoolMaterial, 0xFF = unknown
 
   static void load();                // EEPROM -> RAM, at boot
   static void save();                // RAM -> EEPROM
   static void task();                // From idle(): detects job start/end
   static void file_chosen(const char *abs_path); // Read slicer info into pending_*
-  static bool pending_low();         // The chosen file needs more than is left (with 5% margin)
-  static bool pending_mismatch();    // The file's filament type differs from the loaded spool's name
+  static void choose();              // Pick pending_spool from pending_material
+  static uint8_t candidates();      // Non-empty spools of the file's material (0 if unknown)
+  static bool pending_low();         // The chosen file needs more than is left on the pending spool (5% margin)
+  static bool pending_mismatch();    // The file's material is known and differs from the pending spool's
   static void new_spool_1kg();       // Loaded spool: grams_left = 1000
   static void reset_used();          // Loaded spool: grams_used = 0
   static void select(uint8_t i);     // Load slot i (if not empty)

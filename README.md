@@ -11,8 +11,8 @@ V2.0.0_A): if your printer has one, it is ignored.
 ## Features
 
 - **Spool tracker.** The printer keeps track of how many grams are left on up to 8 spools, counted from what the
-  extruder actually pushed. Pick the loaded spool in the menu. Before a print it warns you when the file needs more
-  than is left, or when the file is for a different filament. Set your spools up in the
+  extruder actually pushed. It picks the spool from the file's material, and asks only when several spools match.
+  Before a print it warns you when the file needs more than is left. Set your spools up in the
   [spool page](https://wheatlay.github.io/sv06-reforged/spools.html).
 - **Night mode.** One switch in the menu makes printing slow and quiet for overnight prints, whatever the file asks
   for, and mutes the beeper.
@@ -41,7 +41,7 @@ For terminal users, the page sends `M1100` commands. Slots are 0 to 7; PLA and P
 
 ```gcode
 M1100                              ; list spools (* = loaded)
-M1100 S2 N"PLA Red" D1.24 G1000    ; slot 2: name, density (g/cm3), grams left
+M1100 S2 N"PLA Red" TPLA G1000     ; slot 2: name, material, grams left
 M1100 A2                           ; load slot 2
 M1100 S2 G640                      ; set grams left
 M1100 S2 X                         ; delete slot 2

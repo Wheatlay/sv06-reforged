@@ -857,8 +857,8 @@ namespace Language_en {
   LSTR MSG_START_LATER                    = _UxGT("Start later");
   LSTR MSG_DELAYED_START_IN               = _UxGT("Start in");
   LSTR MSG_DELAYED_START_CANCEL           = _UxGT("Cancel delayed start");
-  LSTR MSG_DELAYED_START_CANCELLED        = _UxGT("Delayed start cancelled");
-  LSTR MSG_DELAYED_START_FAILED           = _UxGT("Delayed start: no card");
+  LSTR MSG_DELAYED_START_CANCELLED        = _UxGT("Delayed start off");
+  LSTR MSG_DELAYED_START_FAILED           = _UxGT("No card: not started");
   LSTR MSG_SV06_TIME_LEFT                 = _UxGT("TIME LEFT");
   LSTR MSG_SV06_ELAPSED                   = _UxGT("ELAPSED");
   LSTR MSG_SV06_STARTS_IN                 = _UxGT("STARTS IN");
@@ -873,9 +873,12 @@ namespace Language_en {
   LSTR MSG_SPOOL_LEFT                     = _UxGT("Left g");
   LSTR MSG_SPOOL_NEW                      = _UxGT("New spool 1kg");
   LSTR MSG_SPOOL_USED                     = _UxGT("Used");
-  LSTR MSG_SPOOL_MISMATCH                 = _UxGT("Other filament!");
+  LSTR MSG_SPOOL_MISMATCH                 = _UxGT("File:");
   LSTR MSG_SPOOL_RESET_USED               = _UxGT("Reset used totals");
-  LSTR MSG_SPOOL_LOW                      = _UxGT("Low filament!");
+  LSTR MSG_SPOOL_LOW                      = _UxGT("Low:");
+  LSTR MSG_SPOOL_SPOOL                    = _UxGT("Spool");
+  LSTR MSG_SPOOL_SEVERAL                  = _UxGT("Pick spool:");
+  LSTR MSG_SPOOL_MATERIAL                 = _UxGT("Material");
 
   LSTR MSG_TOP_LEFT                       = _UxGT("Top Left");
   LSTR MSG_BOTTOM_LEFT                    = _UxGT("Bottom Left");

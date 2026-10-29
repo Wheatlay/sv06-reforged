@@ -90,19 +90,59 @@ inline void sdcard_start_selected_file() {
     }
   }
 
+  #if ENABLED(SPOOL_TRACKER)
+    // Spool for this print only (applied when the job starts); one function per slot, a menu action has no argument
+    template<uint8_t I> static void spool_pick() { spool.pending_spool = I; ui.goto_previous_screen(); }
+    static void (* const spool_pick_fn[SPOOL_MAX])() = {
+      spool_pick<0>, spool_pick<1>, spool_pick<2>, spool_pick<3>,
+      spool_pick<4>, spool_pick<5>, spool_pick<6>, spool_pick<7>
+    };
+
+    static void menu_spool_pick() {
+      static char label[SPOOL_MAX][SPOOL_NAME_LEN + 8];
+      START_MENU();
+      BACK_ITEM(MSG_BACK);
+      for (uint8_t i = 0; i < SPOOL_MAX; i++) {
+        const Spool &s = spool.spools[i];
+        if (!s.name[0]) continue;
+        if (s.grams_left) sprintf_P(label[i], PSTR("%s %ug"), s.name, uint16_t(s.grams_left));
+        else sprintf_P(label[i], PSTR("%s --"), s.name);
+        ACTION_ITEM_F(FSTR_P(label[i]), spool_pick_fn[i]);
+      }
+      END_MENU();
+    }
+  #endif
+
   static void menu_sd_start() {
     START_MENU();
-    BACK_ITEM(MSG_BUTTON_CANCEL);
     #if ENABLED(SPOOL_TRACKER)
+      // Cancel forgets the spool picked for this file, so a later print (e.g. from a host) doesn't switch to it
+      ACTION_ITEM(MSG_BUTTON_CANCEL, []{
+        spool.pending_spool = -1; spool.pending_material = 0xFF; spool.pending_grams = 0;
+        ui.goto_previous_screen();
+      });
+    #else
+      BACK_ITEM(MSG_BUTTON_CANCEL);
+    #endif
+    #if ENABLED(SPOOL_TRACKER)
+      const uint8_t ps = spool.pending_spool >= 0 ? uint8_t(spool.pending_spool) : spool.active;
+      static char spool_label[SPOOL_NAME_LEN + 12];
+      sprintf_P(spool_label, PSTR("%s: %s"), GET_TEXT(MSG_SPOOL_SPOOL), spool.spools[ps].name);
+      SUBMENU_F(FSTR_P(spool_label), menu_spool_pick);
+      if (spool.candidates() >= 2) {
+        static char several[16];
+        sprintf_P(several, PSTR(" %ux %s"), spool.candidates(), material_name(spool.pending_material)); // "Pick spool: 2x PLA"
+        STATIC_ITEM(MSG_SPOOL_SEVERAL, SS_LEFT | SS_WARN, several);
+      }
       if (spool.pending_low()) {
         static char need_left[24];
-        sprintf_P(need_left, PSTR("%ug > %ug left"), uint16_t(spool.pending_grams), uint16_t(spool.cur().grams_left));
-        STATIC_ITEM(MSG_SPOOL_LOW, SS_LEFT, need_left);
+        sprintf_P(need_left, PSTR(" %ug, left %ug"), uint16_t(spool.pending_grams), uint16_t(spool.spools[ps].grams_left)); // "Low: 120g, left 80g"
+        STATIC_ITEM(MSG_SPOOL_LOW, SS_LEFT | SS_WARN, need_left);
       }
       if (spool.pending_mismatch()) {
         static char type_name[24];
-        sprintf_P(type_name, PSTR("%s / %s"), spool.pending_type, spool.cur().name);
-        STATIC_ITEM(MSG_SPOOL_MISMATCH, SS_LEFT, type_name);
+        sprintf_P(type_name, PSTR(" %s, not %s"), material_name(spool.pending_material), material_name(spool.spools[ps].material)); // "File: PETG, not PLA"
+        STATIC_ITEM(MSG_SPOOL_MISMATCH, SS_LEFT | SS_WARN, type_name);
       }
     #endif
     ACTION_ITEM(MSG_PRINT_NOW, sdcard_start_selected_file);

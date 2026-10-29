@@ -23,6 +23,7 @@
 #if ENABLED(SPOOL_TRACKER)
 
 #include "../../gcode.h"
+#include "../../../MarlinCore.h"
 #include "../../../feature/spool.h"
 
 #include <string.h>
@@ -32,25 +33,27 @@
  *
  *  S<n>        Slot 0..7
  *  N<name>     Name, max 10 chars; N"Name with spaces" for spaces. Creates the slot or renames it.
+ *  T<material> PLA, PETG, ABS, ASA, TPU or OTHER (case-insensitive). New slot: default from the name.
+ *              Without D the density follows the material.
  *  D<float>    Density in g/cm3 (0.50..2.50)
  *  G<int>      Grams left (0 = not set, 1 = empty)
  *  U<int>      Grams used (total)
  *  X           Delete slot S (not the last spool)
  *  A<n>        Load slot n (the spool that extrusion is counted against)
  *
- * Without parameters the spools are listed: S<n> "<name>" D<density> G<left> U<used>, * = loaded.
+ * Without parameters the spools are listed: S<n> "<name>" T<material> D<density> G<left> U<used>, * = loaded.
  *
  * Examples:
  *   M1100                          ; list spools
- *   M1100 S2 N"PLA Red" D1.24 G1000 ; define slot 2
+ *   M1100 S2 N"Red Silk" TPLA G1000 ; define slot 2
  *   M1100 S2 G640                  ; set grams left
  *   M1100 A2                       ; load slot 2
  *   M1100 S2 X                     ; delete slot 2
  */
 
 struct M1100Args {
-  bool has_s, has_n, has_d, has_g, has_u, has_x, has_a;
-  uint8_t s, a, density_cg;
+  bool has_s, has_n, has_d, has_g, has_u, has_x, has_a, has_t;
+  uint8_t s, a, density_cg, material;
   uint16_t grams;
   uint32_t used;
   char name[SPOOL_NAME_LEN + 1];
@@ -87,6 +90,15 @@ static const char* m1100_parse(const char *p, M1100Args &r) {
         r.name[n] = '\0';
         if (!n) return "M1100: empty name";
         r.has_n = true;
+      } break;
+      case 'T': {
+        char tok[8];
+        uint8_t n = 0;
+        while (*p && *p != ' ' && *p != '\t') { if (n < sizeof(tok) - 1) tok[n++] = *p; p++; }
+        tok[n] = '\0';
+        const uint8_t m = n ? material_from_name(tok) : 0xFF;
+        if (m == 0xFF) return "M1100: unknown material";
+        r.has_t = true; r.material = m;
       } break;
       case 'D': {
         if (!isdig(*p) && *p != '.') return "M1100: density expected";
@@ -125,7 +137,7 @@ static void m1100_list() {
     const Spool &s = spool.spools[i];
     if (!s.name[0]) continue;
     SERIAL_ECHO_START();
-    SERIAL_ECHOPGM("S", i, " \"", s.name, "\" D", s.density_cg / 100, ".");
+    SERIAL_ECHOPGM("S", i, " \"", s.name, "\" T", material_name(s.material), " D", s.density_cg / 100, ".");
     if (s.density_cg % 100 < 10) SERIAL_CHAR('0');
     SERIAL_ECHO(s.density_cg % 100);
     SERIAL_ECHOPGM(" G", s.grams_left, " U", s.grams_used);
@@ -140,6 +152,10 @@ void GcodeSuite::M1100() {
   if (err) { SERIAL_ERROR_START(); SERIAL_ECHOLN(err); return; }
 
   bool changed = false;
+
+  // Editing during a print would pause it for the EEPROM write; loading a spool (A) is one byte, so it's allowed
+  // (lets a slicer filament profile's start G-code pick the spool)
+  if (a.has_s && (printingIsActive() || printingIsPaused())) { SERIAL_ERROR_MSG("M1100: can't edit spools while printing"); return; }
 
   if (a.has_s) {
     Spool &s = spool.spools[a.s];
@@ -159,7 +175,15 @@ void GcodeSuite::M1100() {
     else if (a.has_n || s.name[0]) {
       const bool is_new = !s.name[0];
       if (a.has_n) strcpy(s.name, a.name);
-      if (is_new) s.density_cg = 124;
+      if (is_new) {
+        const uint8_t m = a.has_t ? a.material : material_from_name(s.name);
+        s.material = m == 0xFF ? uint8_t(MAT_OTHER) : m;
+        s.density_cg = material_density_cg(s.material);
+      }
+      else if (a.has_t) {
+        s.material = a.material;
+        if (!a.has_d) s.density_cg = material_density_cg(a.material);
+      }
       if (a.has_d) s.density_cg = a.density_cg;
       if (a.has_g) s.grams_left = a.grams;
       if (a.has_u) { s.grams_used = a.used; s.carry_cg = 0; }
@@ -167,7 +191,7 @@ void GcodeSuite::M1100() {
     }
     else { SERIAL_ERROR_MSG("M1100: slot empty, give N"); return; }
   }
-  else if (a.has_n || a.has_d || a.has_g || a.has_u || a.has_x) {
+  else if (a.has_n || a.has_t || a.has_d || a.has_g || a.has_u || a.has_x) {
     SERIAL_ERROR_MSG("M1100: give S<slot>");
     return;
   }

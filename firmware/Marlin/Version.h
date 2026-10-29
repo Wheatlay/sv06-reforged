@@ -28,7 +28,7 @@
 /**
  * Marlin release version identifier
  */
-#define SHORT_BUILD_VERSION "2.1.2.9-R1.1"  // SV06 Reforged 1.1 on Marlin 2.1.2.9
+#define SHORT_BUILD_VERSION "2.1.2.9-R1.1.1"  // SV06 Reforged 1.1.1 on Marlin 2.1.2.9
 
 /**
  * Verbose version identifier which should contain a reference to the location
