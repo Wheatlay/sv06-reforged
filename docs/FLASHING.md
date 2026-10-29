@@ -1,7 +1,7 @@
 # Flashing the SV06
 
-Flashing from the SD card only replaces the firmware. The bootloader that reads the card is never touched, so any
-mistake can be undone by flashing again with the stock file.
+Flashing from the SD card only replaces the firmware. The bootloader that reads the card is not touched, so in
+almost every case you can go back by flashing the stock file the same way.
 
 ## What you need
 
