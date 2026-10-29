@@ -69,6 +69,7 @@
     <div class="row">
       <button class="primary" id="connect">Connect to printer</button>
       <button id="refresh" disabled>Refresh</button>
+      <button id="disconnect" disabled>Disconnect</button>
       <span id="conn-status" class="status">Not connected.</span>
     </div>
     <p class="status" style="margin:10px 0 0">Your browser will ask to allow access to serial ports; allow it, then pick the port named
@@ -216,6 +217,7 @@ async function run(cmd, statusEl) {
 $('connect').onclick = async () => {
   if (!('serial' in navigator)) { status($('conn-status'), 'This browser can\'t use USB. Use Chrome or Edge, or the SD card file tab.', 'err'); return; }
   try {
+    if (port) await disconnect();
     port = await navigator.serial.requestPort();
     await port.open({ baudRate: 115200 });
     // Like desktop serial tools: assert DTR/RTS, some CH340 adapters don't pass data without them
@@ -232,13 +234,27 @@ $('connect').onclick = async () => {
       catch (e) { waiters = []; }
       if (!gotList) await new Promise((r) => setTimeout(r, 300));
     }
-    $('refresh').disabled = false; $('connect').textContent = 'Reconnect';
+    $('refresh').disabled = $('disconnect').disabled = false; $('connect').textContent = 'Reconnect';
     if (gotList) status($('conn-status'), 'Connected.', 'ok');
     else if (!answered) status($('conn-status'), 'No answer from the printer. Is it on, and is no other program (Orca, Pronterface) using the port? In Firefox, try Chrome or Edge.', 'err');
     else status($('conn-status'), err || 'The printer answers, but no spool list came back. Is the firmware SV06 Reforged 1.1 or newer?', 'err');
   } catch (e) { status($('conn-status'), e.message, 'err'); }
 };
 $('refresh').onclick = () => run('M1100', $('conn-status'));
+
+// Release the port so other programs (and other tabs) can use it
+async function disconnect() {
+  const p = port; port = null;
+  try { if (reader) { await reader.cancel(); reader.releaseLock(); } } catch (e) {}
+  try { if (writer) writer.releaseLock(); } catch (e) {}
+  reader = writer = null;
+  try { if (p) await p.close(); } catch (e) {}
+  $('refresh').disabled = $('disconnect').disabled = true;
+  $('connect').textContent = 'Connect to printer';
+  status($('conn-status'), 'Not connected.');
+}
+$('disconnect').onclick = disconnect;
+window.addEventListener('pagehide', disconnect);
 
 // ---------- add ----------
 $('add-mat').onchange = () => $('custom-wrap').classList.toggle('hidden', $('add-mat').value !== 'custom');
