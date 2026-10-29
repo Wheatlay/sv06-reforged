@@ -71,7 +71,8 @@
       <button id="refresh" disabled>Refresh</button>
       <span id="conn-status" class="status">Not connected.</span>
     </div>
-    <p class="status" style="margin:10px 0 0">Pick the port named "USB2.0-Serial" or "CH340".</p>
+    <p class="status" style="margin:10px 0 0">Your browser will ask to allow access to serial ports; allow it, then pick the port named
+      "USB2.0-Serial" or "CH340". Chrome or Edge work best.</p>
     <details style="margin-top:8px"><summary>Log</summary><pre id="log"></pre></details>
     <div>
     </div>
@@ -233,7 +234,7 @@ $('connect').onclick = async () => {
     }
     $('refresh').disabled = false; $('connect').textContent = 'Reconnect';
     if (gotList) status($('conn-status'), 'Connected.', 'ok');
-    else if (!answered) status($('conn-status'), 'No answer from the printer. Is it on, and is no other program (Orca, Pronterface) using the port?', 'err');
+    else if (!answered) status($('conn-status'), 'No answer from the printer. Is it on, and is no other program (Orca, Pronterface) using the port? In Firefox, try Chrome or Edge.', 'err');
     else status($('conn-status'), err || 'The printer answers, but no spool list came back. Is the firmware SV06 Reforged 1.1 or newer?', 'err');
   } catch (e) { status($('conn-status'), e.message, 'err'); }
 };
