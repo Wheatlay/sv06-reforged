@@ -5,8 +5,7 @@
 Custom firmware for the **original Sovol SV06** (board V131, 128x64 screen with a knob), built on Marlin 2.1.2.9
 and Sovol's stock settings.
 
-Not affiliated with Sovol. Not for the SV06 Plus or the SV06 ACE. No filament runout sensor support (like stock
-V2.0.0_A): if your printer has one, it is ignored.
+Not affiliated with Sovol. Not for the SV06 Plus or the SV06 ACE.
 
 ## Features
 
@@ -31,6 +30,8 @@ V2.0.0_A): if your printer has one, it is ignored.
 
 - **Input shaping and linear advance** for cleaner corners at speed.
 - **Bed mesh always on.** The mesh is applied after every homing, with no extra start G-code needed.
+- **Filament runout sensor support** for printers with Sovol's optional sensor. It's off by default, so printers
+  without one work as before. To turn it on: Configuration > Runout Sensor, then Configuration > Store Settings.
 
 ## Managing spools from your PC
 
@@ -47,8 +48,8 @@ M1100 S2 G640                      ; set grams left
 M1100 S2 X                         ; delete slot 2
 ```
 
-Tip: put `M1100 A2` in a filament profile's start G-code in your slicer, and printing with that profile loads the
-matching spool by itself.
+Optional: to always use one exact spool with a slicer filament profile (for example when you have two PLA spools),
+put `M1100 A2` (with that spool's slot) in the profile's start G-code.
 
 ## FAQ
 

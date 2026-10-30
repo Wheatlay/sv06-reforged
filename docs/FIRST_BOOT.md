@@ -11,7 +11,7 @@ grinding noise, switch off immediately.
 
 ## 1. Flash and reset settings
 
-- [ ] Flash the SV06 Reforged `.bin` with a new file name. The boot logo appears, then `2.1.2.9-R1.1.1`.
+- [ ] Flash the SV06 Reforged `.bin` with a new file name. The boot logo appears, then `2.1.2.9-R1.2`.
 - [ ] If an EEPROM alert appears, choose Reset (about 10 s, don't power off). Otherwise do Configuration >
   Restore Defaults, then Store Settings. Settings saved by the stock firmware use a different layout, so this step
   is not optional.

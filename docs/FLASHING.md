@@ -21,7 +21,7 @@ almost every case you can go back by flashing the stock file the same way.
 4. **Eject** the card in your operating system before pulling it out.
 5. Push the card fully into the printer until it clicks, and turn the printer on.
 6. Wait. The screen stays blank or blue for about 30 seconds while it flashes. Don't turn the printer off.
-7. SV06 Reforged starts by itself: boot logo, then `2.1.2.9-R1.1.1`. If the saved settings don't match (always after
+7. SV06 Reforged starts by itself: boot logo, then `2.1.2.9-R1.2`. If the saved settings don't match (always after
    stock firmware), it shows an **EEPROM alert**: its "Reset" loads the firmware defaults (about 10 s, don't
    power off). Then set your Z offset again and run Level Bed.
    (Sovol's firmware instead asks to **Reset**. An "Err" after that Reset is normal, says Sovol: select Reset
