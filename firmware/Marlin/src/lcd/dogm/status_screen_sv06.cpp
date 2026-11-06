@@ -92,10 +92,13 @@ namespace {
     }
   };
 
-  // Draw the bottom rows of a "heating" bitmap over the plain icon: power 127 = whole bitmap
-  void fill_from_bottom(const uint8_t x, const uint8_t y, const uint8_t bw, const uint8_t h, const uint8_t *bmp, const int16_t power) {
+  // Draw the bottom rows of a "heating" bitmap over the plain icon: power 127 = whole bitmap.
+  // `same` = bottom rows identical to the plain icon; they're skipped in the scale so any power > 0
+  // shows at least one changed row (a bed holding temperature runs at low PID power).
+  void fill_from_bottom(const uint8_t x, const uint8_t y, const uint8_t bw, const uint8_t h, const uint8_t *bmp, const int16_t power, const uint8_t same=0) {
     if (power <= 0) return;
-    const uint8_t rows = _MIN(h, uint8_t((uint16_t(h) * power + 126) / 127));
+    const uint8_t span = h - same,
+                  rows = same + _MIN(span, uint8_t((uint16_t(span) * power + 126) / 127));
     u8g.drawBitmapP(x, y + h - rows, bw, rows, bmp + (h - rows) * bw);
   }
 
@@ -154,7 +157,7 @@ void MarlinUI::draw_status_screen() {
   deg(12 + u8g.getStrWidth(buf) + 1, 2);
 
   u8g.drawBitmapP(42, 5, SV06_BED_BW, SV06_BED_H, sv06_bed_bmp);
-  fill_from_bottom(42, 0, SV06_BED_ON_BW, SV06_BED_ON_H, sv06_bed_on_bmp, thermalManager.getHeaterPower(H_BED));
+  fill_from_bottom(42, 0, SV06_BED_ON_BW, SV06_BED_ON_H, sv06_bed_on_bmp, thermalManager.getHeaterPower(H_BED), 3);
   sprintf_P(buf, PSTR("%u"), uint16_t(bed_cur));
   u8g.drawStr(62, 10, buf);
   deg(62 + u8g.getStrWidth(buf) + 1, 2);
